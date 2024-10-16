@@ -3,13 +3,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const path = require('path');  // Required for handling paths
 const app = express();
 
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static('public'));  // Serve static files from the public directory
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://49185:PWo75YNR5InUuF7M@cluster0.io3ti.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -39,7 +37,7 @@ function authenticateToken(req, res, next) {
         if (err) {
             return res.status(403).send('Invalid token');
         }
-        req.user = user; // Store user data for later use
+        req.user = user; // store user data for later use
         next();
     });
 }
@@ -76,17 +74,9 @@ app.get('/logout', (req, res) => {
     res.send('Logged out');
 });
 
-// Protected route examples
-app.get('/profile', authenticateToken, (req, res) => {
-    res.send(`Welcome to your profile, user ID: ${req.user.id}`);
-});
-
-app.get('/ai-chat', authenticateToken, (req, res) => {
-    res.sendFile(path.join(__dirname, '/public/ai-chat.html'));
-});
-
-app.get('/connect', authenticateToken, (req, res) => {
-    res.sendFile(path.join(__dirname, '/public/connect.html'));
+// Example protected route
+app.get('/protected', authenticateToken, (req, res) => {
+    res.send(`Welcome ${req.user.id}, this is a protected route!`);
 });
 
 app.listen(3000, () => {
