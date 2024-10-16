@@ -9,15 +9,36 @@
 <body>
     <!-- Navbar -->
     <nav>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="ai-chat.html">AI Chatbot</a></li>
-            <li><a href="connect.html">Connect</a></li>
-            <li><a href="forum.html">Forums</a></li>
-            <li><a href="articles.html">Articles</a></li>
-            <li><a href="login.html">Login</a></li>
-        </ul>
-    </nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="connect.html" id="connect-link">Connect</a></li>
+        <li><a href="ai-chat.html" id="chatbot-link">AI Chatbot</a></li>
+        <li><a href="login.html" id="login-link">Login</a></li>
+        <li><a href="signup.html" id="signup-link">Signup</a></li>
+        <li><a href="#" id="logout-link" style="display:none;">Logout</a></li>
+    </ul>
+</nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const token = document.cookie.split(';').find(cookie => cookie.trim().startsWith('token='));
+    if (token) {
+        // Hide login/signup if the user is authenticated
+        document.getElementById('login-link').style.display = 'none';
+        document.getElementById('signup-link').style.display = 'none';
+        document.getElementById('logout-link').style.display = 'block';
+    } else {
+        document.getElementById('connect-link').style.display = 'none';
+        document.getElementById('chatbot-link').style.display = 'none';
+    }
+
+    document.getElementById('logout-link').addEventListener('click', function() {
+        document.cookie = 'token=; Max-Age=0'; // Delete the token
+        window.location.href = '/login.html';
+    });
+});
+</script>
+
 
     <main>
         <h1>Welcome to the Mental Health Platform</h1>
