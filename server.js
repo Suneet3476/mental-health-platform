@@ -40,10 +40,28 @@ function authenticateToken(req, res, next) {
         if (err) {
             return res.status(403).send('Invalid token');
         }
-        req.user = user; // store user data for later use
+        req.user = user; // Store user data for later use
         next();
     });
 }
+
+// Simulating vent/listen matching
+let ventersQueue = [];
+let listenersQueue = [];
+
+// Vent route
+app.post('/api/vent', authenticateToken, (req, res) => {
+    listenersQueue.length > 0
+        ? res.json({ message: 'Matched with a listener!' })
+        : ventersQueue.push(req.user.username) && res.json({ message: 'Waiting for a listener...' });
+});
+
+// Listen route
+app.post('/api/listen', authenticateToken, (req, res) => {
+    ventersQueue.length > 0
+        ? res.json({ message: 'Matched with a venter!' })
+        : listenersQueue.push(req.user.username) && res.json({ message: 'Waiting for a venter...' });
+});
 
 // Routes
 app.post('/signup', async (req, res) => {
