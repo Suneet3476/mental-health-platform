@@ -3,11 +3,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const path = require('path');  // Required for handling paths
 const app = express();
 
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('public'));  // Serve static files from the public directory
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://49185:PWo75YNR5InUuF7M@cluster0.io3ti.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -24,6 +26,23 @@ const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 }));
+
+// JWT Middleware to protect routes
+function authenticateToken(req, res, next) {
+    const token = req.cookies.token;
+    
+    if (!token) {
+        return res.status(403).send('Access denied');
+    }
+    
+    jwt.verify(token, 'your_jwt_secret', (err, user) => {
+        if (err) {
+            return res.status(403).send('Invalid token');
+        }
+        req.user = user; // Store user data for later use
+        next();
+    });
+}
 
 // Routes
 app.post('/signup', async (req, res) => {
@@ -55,6 +74,19 @@ app.post('/login', async (req, res) => {
 app.get('/logout', (req, res) => {
     res.clearCookie('token');
     res.send('Logged out');
+});
+
+// Protected route examples
+app.get('/profile', authenticateToken, (req, res) => {
+    res.send(`Welcome to your profile, user ID: ${req.user.id}`);
+});
+
+app.get('/ai-chat', authenticateToken, (req, res) => {
+    res.sendFile(path.join(__dirname, '/public/ai-chat.html'));
+});
+
+app.get('/connect', authenticateToken, (req, res) => {
+    res.sendFile(path.join(__dirname, '/public/connect.html'));
 });
 
 app.listen(3000, () => {
