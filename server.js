@@ -4,9 +4,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');  // Import dotenv
+const http = require('http');
+const { Server } = require('socket.io');
 
 dotenv.config();  // Load environment variables from .env file
 const app = express();
+
+// Create an HTTP server to work with Socket.io
+const server = http.createServer(app);
+const io = new Server(server);
 
 // Middlewares
 app.use(express.json());
@@ -45,22 +51,52 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Simulating vent/listen matching
+// Venter/Listener queues for matching users
 let ventersQueue = [];
 let listenersQueue = [];
 
-// Vent route
-app.post('/api/vent', authenticateToken, (req, res) => {
-    listenersQueue.length > 0
-        ? res.json({ message: 'Matched with a listener!' })
-        : ventersQueue.push(req.user.username) && res.json({ message: 'Waiting for a listener...' });
-});
+// WebSocket connection handler
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
 
-// Listen route
-app.post('/api/listen', authenticateToken, (req, res) => {
-    ventersQueue.length > 0
-        ? res.json({ message: 'Matched with a venter!' })
-        : listenersQueue.push(req.user.username) && res.json({ message: 'Waiting for a venter...' });
+    // Handle vent request
+    socket.on('join-vent', (user) => {
+        if (listenersQueue.length > 0) {
+            // Match with a listener
+            const listenerSocketId = listenersQueue.shift();
+            io.to(listenerSocketId).emit('matched', user); // Notify listener
+            socket.emit('matched', { role: 'venter', listenerSocketId }); // Notify venter
+        } else {
+            ventersQueue.push(socket.id); // Add venter to the queue
+            socket.emit('waiting', 'Waiting for a listener...');
+        }
+    });
+
+    // Handle listen request
+    socket.on('join-listen', (user) => {
+        if (ventersQueue.length > 0) {
+            // Match with a venter
+            const venterSocketId = ventersQueue.shift();
+            io.to(venterSocketId).emit('matched', user); // Notify venter
+            socket.emit('matched', { role: 'listener', venterSocketId }); // Notify listener
+        } else {
+            listenersQueue.push(socket.id); // Add listener to the queue
+            socket.emit('waiting', 'Waiting for a venter...');
+        }
+    });
+
+    // Handle messages
+    socket.on('message', (data) => {
+        io.to(data.to).emit('message', { from: socket.id, message: data.message });
+    });
+
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        console.log('A user disconnected:', socket.id);
+        // Remove from queues if disconnect happens while waiting
+        ventersQueue = ventersQueue.filter(id => id !== socket.id);
+        listenersQueue = listenersQueue.filter(id => id !== socket.id);
+    });
 });
 
 // Routes
@@ -100,6 +136,7 @@ app.get('/protected', authenticateToken, (req, res) => {
     res.send(`Welcome ${req.user.id}, this is a protected route!`);
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+// Start server
+server.listen(3000, () => {
+    console.log('Server listening on port 3000');
 });
