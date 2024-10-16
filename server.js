@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const dotenv = require('dotenv');  // Import dotenv
+
+dotenv.config();  // Load environment variables from .env file
 const app = express();
 
 // Middlewares
@@ -33,7 +36,7 @@ function authenticateToken(req, res, next) {
         return res.status(403).send('Access denied');
     }
     
-    jwt.verify(token, 'your_jwt_secret', (err, user) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {  // Use secret from .env
         if (err) {
             return res.status(403).send('Invalid token');
         }
@@ -64,7 +67,7 @@ app.post('/login', async (req, res) => {
         return res.status(400).send('Invalid credentials');
     }
 
-    const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });  // Use secret from .env
     res.cookie('token', token, { httpOnly: true });
     res.send('Logged in successfully');
 });
