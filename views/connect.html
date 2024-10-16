@@ -3,24 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <title>Connect - Vent or Listen</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <nav>
         <ul>
             <li><a href="index.html">Home</a></li>
-            <li><a href="ai-chat.html">AI Chatbot</a></li>
             <li><a href="connect.html">Connect</a></li>
-            <li><a href="forum.html">Forums</a></li>
-            <li><a href="articles.html">Articles</a></li>
+            <li><a href="ai-chat.html">AI Chatbot</a></li>
             <li><a href="login.html">Login</a></li>
+            <li><a href="#" id="logout-link" style="display:none;">Logout</a></li>
         </ul>
     </nav>
 
-    <main>
-        <h1>Connect as a Venter or Listener</h1>
-        <p>Feature coming soon!</p>
-    </main>
+    <div class="container">
+        <h1>Choose Your Role</h1>
+        <div class="role-selection">
+            <button id="vent-btn">I Want to Vent</button>
+            <button id="listen-btn">I Want to Listen</button>
+        </div>
+        <div id="match-result">
+            <!-- Match result will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('vent-btn').addEventListener('click', () => {
+            document.getElementById('match-result').innerHTML = '<p>Vent functionality coming soon!</p>';
+        });
+
+        document.getElementById('listen-btn').addEventListener('click', () => {
+            document.getElementById('match-result').innerHTML = '<p>Listen functionality coming soon!</p>';
+        });
+    </script>
 </body>
 </html>
