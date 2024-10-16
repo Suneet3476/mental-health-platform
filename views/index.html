@@ -37,6 +37,28 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/login.html';
     });
 });
+
+async function vent() {
+    const response = await fetch('/api/vent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    document.getElementById('match-result').innerHTML = `<p>${data.message}</p>`;
+}
+
+async function listen() {
+    const response = await fetch('/api/listen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    document.getElementById('match-result').innerHTML = `<p>${data.message}</p>`;
+}
+
+document.getElementById('vent-btn').addEventListener('click', vent);
+document.getElementById('listen-btn').addEventListener('click', listen);
+
 </script>
 
 
