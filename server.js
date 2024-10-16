@@ -5,8 +5,11 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');  // Import dotenv
 const http = require('http');
+const https = require('https'); // Import HTTPS
+const fs = require('fs'); // Import file system
 const { Server } = require('socket.io');
 const session = require('express-session');  // Import express-session
+const { body, validationResult } = require('express-validator'); // Import express-validator
 
 dotenv.config();  // Load environment variables from .env file
 const app = express();
@@ -82,7 +85,7 @@ io.on('connection', (socket) => {
         } else {
             ventersQueue.push(socket.id);
             socket.emit('waiting', 'Waiting for a listener...');
-            
+
             // Timeout after 2 minutes if no match is found
             ventTimeout = setTimeout(() => {
                 socket.emit('timeout', 'No listener available. Please try again.');
@@ -101,7 +104,7 @@ io.on('connection', (socket) => {
         } else {
             listenersQueue.push(socket.id);
             socket.emit('waiting', 'Waiting for a venter...');
-            
+
             // Timeout after 2 minutes if no match is found
             listenTimeout = setTimeout(() => {
                 socket.emit('timeout', 'No venter available. Please try again.');
@@ -138,7 +141,16 @@ app.post('/signup', async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
+// Updated login route with validation
+app.post('/login', [
+    body('username').trim().escape(),
+    body('password').trim().escape()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { username, password } = req.body;
     const user = await User.findOne({ username });
 
@@ -176,7 +188,17 @@ app.get('/protected', authenticateToken, (req, res) => {
     res.send(`Welcome ${req.user.id}, this is a protected route!`);
 });
 
-// Start server
+// HTTPS setup
+const options = {
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+};
+
+https.createServer(options, app).listen(443, () => {
+    console.log('Server running on https://localhost:443');
+});
+
+// Start the HTTP server as a fallback or for testing
 server.listen(3000, () => {
     console.log('Server listening on port 3000');
 });
