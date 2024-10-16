@@ -5,11 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coming Soon</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+            color: #555;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #FF6347;  /* Make it stand out */
+        }
+        p {
+            font-size: 1.5em;
+            color: #888;
+        }
+        .cta {
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #337ab7;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .cta:hover {
+            color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Coming Soon</h1>
-        <p>This section will be available soon. Stay tuned!</p>
+        <p>We are working hard to bring you exciting content. Stay tuned!</p>
+        <a href="index.html" class="cta">Go Back to Home</a>
     </div>
 </body>
 </html>
