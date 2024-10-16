@@ -82,6 +82,18 @@
         function showChatbox() {
             document.getElementById('chatbox').style.display = 'block';
         }
+
+        // Logout functionality
+        document.getElementById('logout-link').addEventListener('click', () => {
+            fetch('/logout', { method: 'POST' })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = 'login.html'; // Redirect to login page
+                } else {
+                    alert('Logout failed. Please try again.');
+                }
+            });
+        });
     </script>
 </body>
 </html>
