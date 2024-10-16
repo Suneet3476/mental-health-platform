@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connect - Vent or Listen</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <nav>
@@ -26,16 +27,61 @@
         <div id="match-result">
             <!-- Match result will be displayed here -->
         </div>
+
+        <div id="chatbox" style="display:none;">
+            <h2>Live Chat</h2>
+            <div id="messages" style="border: 1px solid #ddd; padding: 10px; height: 300px; overflow-y: scroll;"></div>
+            <input type="text" id="message-input" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
     </div>
 
     <script>
+        const socket = io();
+
         document.getElementById('vent-btn').addEventListener('click', () => {
-            document.getElementById('match-result').innerHTML = '<p>Vent functionality coming soon!</p>';
+            socket.emit('join-vent', 'Venter');
+            showChatbox();
         });
 
         document.getElementById('listen-btn').addEventListener('click', () => {
-            document.getElementById('match-result').innerHTML = '<p>Listen functionality coming soon!</p>';
+            socket.emit('join-listen', 'Listener');
+            showChatbox();
         });
+
+        // Handle matching
+        socket.on('matched', (user) => {
+            document.getElementById('match-result').innerHTML = `<p>Matched with a ${user.role === 'venter' ? 'listener' : 'venter'}!</p>`;
+            document.getElementById('chatbox').style.display = 'block';
+            socket.partner = user.role === 'venter' ? user.listenerSocketId : user.venterSocketId;
+        });
+
+        // Handle waiting
+        socket.on('waiting', (message) => {
+            document.getElementById('match-result').innerHTML = `<p>${message}</p>`;
+        });
+
+        // Handle incoming messages
+        socket.on('message', (data) => {
+            let messageElement = document.createElement('p');
+            messageElement.textContent = `Partner: ${data.message}`;
+            document.getElementById('messages').appendChild(messageElement);
+        });
+
+        // Send a message
+        function sendMessage() {
+            const message = document.getElementById('message-input').value;
+            socket.emit('message', { to: socket.partner, message });
+            let messageElement = document.createElement('p');
+            messageElement.textContent = `You: ${message}`;
+            document.getElementById('messages').appendChild(messageElement);
+            document.getElementById('message-input').value = '';
+        }
+
+        // Show chatbox once matched
+        function showChatbox() {
+            document.getElementById('chatbox').style.display = 'block';
+        }
     </script>
 </body>
 </html>
