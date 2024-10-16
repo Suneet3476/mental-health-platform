@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');  // Import dotenv
 const http = require('http');
 const { Server } = require('socket.io');
+const session = require('express-session');  // Import express-session
 
 dotenv.config();  // Load environment variables from .env file
 const app = express();
@@ -17,6 +18,14 @@ const io = new Server(server);
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
+
+// Add session middleware with expiration time
+app.use(session({
+    secret: 'your-secret-key', // Replace with a strong secret key
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false, maxAge: 30 * 60 * 1000 } // Session expires after 30 minutes
+}));
 
 // Connect to MongoDB
 mongoose.connect('mongodb+srv://49185:PWo75YNR5InUuF7M@cluster0.io3ti.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
@@ -55,6 +64,10 @@ function authenticateToken(req, res, next) {
 let ventersQueue = [];
 let listenersQueue = [];
 
+// Timeouts for venters and listeners
+let ventTimeout;
+let listenTimeout;
+
 // WebSocket connection handler
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
@@ -62,38 +75,50 @@ io.on('connection', (socket) => {
     // Handle vent request
     socket.on('join-vent', (user) => {
         if (listenersQueue.length > 0) {
-            // Match with a listener
             const listenerSocketId = listenersQueue.shift();
-            io.to(listenerSocketId).emit('matched', user); // Notify listener
-            socket.emit('matched', { role: 'venter', listenerSocketId }); // Notify venter
+            io.to(listenerSocketId).emit('matched', user);
+            socket.emit('matched', { role: 'venter', listenerSocketId });
+            clearTimeout(ventTimeout); // Clear timeout on match
         } else {
-            ventersQueue.push(socket.id); // Add venter to the queue
+            ventersQueue.push(socket.id);
             socket.emit('waiting', 'Waiting for a listener...');
+            
+            // Timeout after 2 minutes if no match is found
+            ventTimeout = setTimeout(() => {
+                socket.emit('timeout', 'No listener available. Please try again.');
+                ventersQueue = ventersQueue.filter(id => id !== socket.id); // Remove from queue
+            }, 120000); // 2 minutes
         }
     });
 
     // Handle listen request
     socket.on('join-listen', (user) => {
         if (ventersQueue.length > 0) {
-            // Match with a venter
             const venterSocketId = ventersQueue.shift();
-            io.to(venterSocketId).emit('matched', user); // Notify venter
-            socket.emit('matched', { role: 'listener', venterSocketId }); // Notify listener
+            io.to(venterSocketId).emit('matched', user);
+            socket.emit('matched', { role: 'listener', venterSocketId });
+            clearTimeout(listenTimeout); // Clear timeout on match
         } else {
-            listenersQueue.push(socket.id); // Add listener to the queue
+            listenersQueue.push(socket.id);
             socket.emit('waiting', 'Waiting for a venter...');
+            
+            // Timeout after 2 minutes if no match is found
+            listenTimeout = setTimeout(() => {
+                socket.emit('timeout', 'No venter available. Please try again.');
+                listenersQueue = listenersQueue.filter(id => id !== socket.id); // Remove from queue
+            }, 120000); // 2 minutes
         }
     });
 
-    // Handle messages
-    socket.on('message', (data) => {
-        io.to(data.to).emit('message', { from: socket.id, message: data.message });
+    // Clear timeouts on successful match
+    socket.on('matched', () => {
+        clearTimeout(ventTimeout);
+        clearTimeout(listenTimeout);
     });
 
     // Handle disconnect
     socket.on('disconnect', () => {
         console.log('A user disconnected:', socket.id);
-        // Remove from queues if disconnect happens while waiting
         ventersQueue = ventersQueue.filter(id => id !== socket.id);
         listenersQueue = listenersQueue.filter(id => id !== socket.id);
     });
@@ -123,12 +148,27 @@ app.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });  // Use secret from .env
     res.cookie('token', token, { httpOnly: true });
+    req.session.username = username; // Store username in session
     res.send('Logged in successfully');
 });
 
-app.get('/logout', (req, res) => {
-    res.clearCookie('token');
-    res.send('Logged out');
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.clearCookie('connect.sid'); // Clear session cookie
+        res.status(200).json({ message: 'Logout successful' });
+    });
+});
+
+// Protect route with session middleware
+app.get('/chat', (req, res) => {
+    if (req.session.username) {
+        res.sendFile(__dirname + '/public/chat.html'); // Serve the chat.html file
+    } else {
+        res.redirect('/login.html'); // Redirect to login if not authenticated
+    }
 });
 
 // Example protected route
