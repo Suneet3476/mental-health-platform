@@ -5,11 +5,9 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');  // Import dotenv
 const http = require('http');
-const https = require('https'); // Import HTTPS
-const fs = require('fs'); // Import file system
 const { Server } = require('socket.io');
 const session = require('express-session');  // Import express-session
-const { body, validationResult } = require('express-validator'); // Import express-validator
+const { body, validationResult } = require('express-validator');
 
 dotenv.config();  // Load environment variables from .env file
 const app = express();
@@ -21,8 +19,6 @@ const io = new Server(server);
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
-
-// Add session middleware with expiration time
 app.use(session({
     secret: 'your-secret-key', // Replace with a strong secret key
     resave: false,
@@ -49,11 +45,11 @@ const User = mongoose.model('User', new mongoose.Schema({
 // JWT Middleware to protect routes
 function authenticateToken(req, res, next) {
     const token = req.cookies.token;
-    
+
     if (!token) {
         return res.status(403).send('Access denied');
     }
-    
+
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {  // Use secret from .env
         if (err) {
             return res.status(403).send('Invalid token');
@@ -141,7 +137,6 @@ app.post('/signup', async (req, res) => {
     }
 });
 
-// Updated login route with validation
 app.post('/login', [
     body('username').trim().escape(),
     body('password').trim().escape()
@@ -188,17 +183,7 @@ app.get('/protected', authenticateToken, (req, res) => {
     res.send(`Welcome ${req.user.id}, this is a protected route!`);
 });
 
-// HTTPS setup
-const options = {
-    key: fs.readFileSync('server.key'),
-    cert: fs.readFileSync('server.cert')
-};
-
-https.createServer(options, app).listen(443, () => {
-    console.log('Server running on https://localhost:443');
-});
-
-// Start the HTTP server as a fallback or for testing
+// Start server
 server.listen(3000, () => {
     console.log('Server listening on port 3000');
 });
