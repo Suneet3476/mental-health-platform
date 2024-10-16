@@ -18,6 +18,17 @@ function sendMessage() {
     botMessage.style.color = "#007bff";
     messages.appendChild(botMessage);
 
+    document.getElementById('loginForm').addEventListener('submit', (event) => {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+        event.preventDefault();
+        alert('Both fields are required!');
+    }
+});
+
+
     // Clear the input field
     document.getElementById("message-input").value = "";
 
